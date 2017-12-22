@@ -15,10 +15,11 @@
 
 			body {
 				background:#000;
+				overflow: hidden;
 				color:#fff;
 				padding:0;
 				margin:0;
-				font-size: 10px;
+				font-size: 10px;	
 			}
 
 			a {
@@ -28,6 +29,7 @@
 			#info {
 				position: absolute;
 				top: 0px; width: 100%;
+				pointer-events: none;
 				color: #ffffff;
 				padding: 5px;
 				font-family:Monospace;
@@ -53,6 +55,8 @@
 
 			.code-container{
 				overflow: scroll;
+				position: absolute;
+				margin: 0px; padding: 0px;
 				width: 100%;
 				height: 100%;				
 			}
@@ -144,7 +148,6 @@
 
 				var pre = {};
 				material.onBeforeCompile = function( shader ){
-					console.log( 'pre', shader );
 					pre.vertexShader = shader.vertexShader;
 					pre.fragmentShader = shader.fragmentShader;
 				}
@@ -168,17 +171,40 @@
 			for( var i = 0; i<materialClasses.length; i++ ){
 				materialInfo = compileMaterial( THREE[ materialClasses[i][0] ] );
 				materials.push( materialInfo );
-			}			
+			}
+			
+			var materialSelect = document.getElementById( 'material-select' );
+			var option;
 
-			var ele = document.getElementsByClassName( 'code-container' )[0];
-			var lcode = document.getElementById( 'left-code' );
-			var rcode = document.getElementById( 'right-code' );
+			for( var i = 0; i<materials.length; i++ ){
 
-			// lcode.innerHTML = materialInfo.pre.vertexShader.replace( '#include <', '#include $lt;' ).replace( ';			
-			lcode.innerHTML = materialInfo.post.vertexShader;			
-			rcode.innerHTML = materialInfo.post.vertexShader;			
+				option = document.createElement( 'option' );
+				option.text = materials[i].type;
+				materialSelect.options.add( option );
 
-			Prism.highlightAllUnder( ele, true );
+			}
+
+			var onChangeMaterial = function( index ){
+
+				materialSelect.selectedIndex = index;
+
+				document.getElementById( 'left-code' ).innerHTML = materials[index].post.vertexShader;			
+				document.getElementById( 'right-code' ).innerHTML = materials[index].post.vertexShader;
+
+				Prism.highlightAllUnder( document.getElementsByClassName( 'code-container' )[0], true );				
+
+			}
+
+			materialSelect.onchange = function(ev){
+
+				onChangeMaterial( materialSelect.selectedIndex );
+
+			}
+
+			// Phong
+			onChangeMaterial( 5 ); 
+
+
 			
 
 		</script>
