@@ -52,9 +52,54 @@
 
 		<script src="../build/three.js"></script>
 
-			
 		<script>
 
+			var materialClasses = [
+				[ THREE.MeshDepthMaterial, 'depth' ],
+				[ THREE.MeshDistanceMaterial, 'distanceRGBA' ],
+				[ THREE.MeshNormalMaterial, 'normal' ],
+				[ THREE.MeshBasicMaterial, 'basic' ],
+				[ THREE.MeshLambertMaterial, 'lambert' ],
+				[ THREE.MeshPhongMaterial, 'phong' ],
+				[ THREE.MeshToonMaterial, 'phong' ],
+				[ THREE.MeshStandardMaterial, 'physical' ],
+				[ THREE.MeshPhysicalMaterial, 'physical' ],
+				[ THREE.LineBasicMaterial, 'basic' ],
+				[ THREE.LineDashedMaterial, 'dashed' ],
+				[ THREE.PointsMaterial, 'points' ],
+				[ THREE.ShadowMaterial, 'shadow' ]
+			];
+
+			var materials = [];
+
+			var renderer = new THREE.WebGLRenderer();
+			var scene = new THREE.Scene();
+			var camera = new THREE.PerspectiveCamera(70,16/9,0.1,1000);
+			var geometry = new THREE.PlaneBufferGeometry(1,1,1,1);
+
+			var compileMaterial = function( MaterialClass ){
+
+				var material = new MaterialClass();				
+				var mesh = new THREE.Mesh( geometry,material );
+
+				scene.add( mesh );
+				renderer.render( scene, camera );
+				scene.remove( mesh );
+
+				return {
+					type: material.type,
+					vertexShader: renderer.context.getShaderSource( material.program.vertexShader ),
+					fragmentShader: renderer.context.getShaderSource( material.program.fragmentShader )
+				}
+
+			}
+
+			for( var i = 0; i<materialClasses.length; i++ ){
+				materials.push( compileMaterial( materialClasses[i][0] ) );
+			}
+
+			console.log( materials );
+			
 
 		</script>
 
