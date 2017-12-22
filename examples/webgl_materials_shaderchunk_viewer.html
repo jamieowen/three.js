@@ -94,7 +94,7 @@
 
 		<div class="content">
 
-			<div class="code-container line-numbers language-glsl">
+			<div class="code-container language-glsl">
 
 				<div class="left-panel">
 
@@ -196,7 +196,7 @@
 
 				document.getElementById( 'left-code' ).innerHTML = encodeEntities( materials[index].pre.vertexShader );			
 				document.getElementById( 'right-code' ).innerHTML = encodeEntities( materials[index].post.vertexShader );
-
+				console.log( materials[index].pre.vertexShader );
 				Prism.highlightAllUnder( document.getElementsByClassName( 'code-container' )[0], true );				
 
 			}
@@ -209,9 +209,6 @@
 
 			// Phong
 			onChangeMaterial( 5 ); 
-
-
-			
 
 		</script>
 
