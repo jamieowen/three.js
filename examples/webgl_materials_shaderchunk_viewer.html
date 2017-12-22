@@ -18,8 +18,7 @@
 				color:#fff;
 				padding:0;
 				margin:0;
-				font-weight: bold;
-				overflow:hidden;
+				font-size: 10px;
 			}
 
 			a {
@@ -37,12 +36,42 @@
 				z-index:1000;
 			}
 
-			#oldie {
-				background:rgb(200,100,0) !important;
-				color:#fff;
+			.navigation{
+				background-color: #121212;
+				width: 100%;
+				height: calc( 60px - 10px );
+				padding: 5px 0px;				
 			}
 
+			.content{
+				overflow: hidden;
+				position: absolute;
+				top: 60px; left: 0px;
+				width: 100%;
+				height: calc( 100% - 60px );				
+			}
+
+			.code-container{
+				overflow: scroll;
+				width: 100%;
+				height: 100%;				
+			}
+
+			.left-panel{
+				position: absolute;
+				width: 50%;
+				left: 0px; top: 0px;				
+			}
+
+			.right-panel{	
+				position: absolute;
+				width: 50%;
+				left: 50%; top: 0px;
+			}
+
+
 		</style>
+		<link rel="stylesheet" type="text/css" href="js/libs/prism/prism.css">
 	</head>
 
 	<body>
@@ -50,24 +79,55 @@
 			<a href="http://threejs.org" target="_blank" rel="noopener">three.js</a> wegbl - shaderchunk viewer.
 		</div>
 
+		
+		<script src="js/libs/prism/prism.js"></script>
 		<script src="../build/three.js"></script>
+
+		<div class="navigation">
+			<select id="material-select">				
+			</select>
+		</div>
+
+		<div class="content">
+
+			<div class="code-container language-glsl">
+
+				<div class="left-panel">
+
+					<pre>
+						<code id="left-code"></code>
+					</pre>
+
+				</div>
+
+				<div class="right-panel">
+						
+					<pre>
+						<code id="right-code"></code>
+					</pre>
+
+				</div>
+
+			</div>
+
+		</div>
 
 		<script>
 
 			var materialClasses = [
-				[ THREE.MeshDepthMaterial, 'depth' ],
-				[ THREE.MeshDistanceMaterial, 'distanceRGBA' ],
-				[ THREE.MeshNormalMaterial, 'normal' ],
-				[ THREE.MeshBasicMaterial, 'basic' ],
-				[ THREE.MeshLambertMaterial, 'lambert' ],
-				[ THREE.MeshPhongMaterial, 'phong' ],
-				[ THREE.MeshToonMaterial, 'phong' ],
-				[ THREE.MeshStandardMaterial, 'physical' ],
-				[ THREE.MeshPhysicalMaterial, 'physical' ],
-				[ THREE.LineBasicMaterial, 'basic' ],
-				[ THREE.LineDashedMaterial, 'dashed' ],
-				[ THREE.PointsMaterial, 'points' ],
-				[ THREE.ShadowMaterial, 'shadow' ]
+				[ 'MeshDepthMaterial', 'depth' ],
+				[ 'MeshDistanceMaterial', 'distanceRGBA' ],
+				[ 'MeshNormalMaterial', 'normal' ],
+				[ 'MeshBasicMaterial', 'basic' ],
+				[ 'MeshLambertMaterial', 'lambert' ],
+				[ 'MeshPhongMaterial', 'phong' ],
+				[ 'MeshToonMaterial', 'phong' ],
+				[ 'MeshStandardMaterial', 'physical' ],
+				[ 'MeshPhysicalMaterial', 'physical' ],
+				[ 'LineBasicMaterial', 'basic' ],
+				[ 'LineDashedMaterial', 'dashed' ],
+				[ 'PointsMaterial', 'points' ],
+				[ 'ShadowMaterial', 'shadow' ]
 			];
 
 			var materials = [];
@@ -82,23 +142,43 @@
 				var material = new MaterialClass();				
 				var mesh = new THREE.Mesh( geometry,material );
 
+				var pre = {};
+				material.onBeforeCompile = function( shader ){
+					console.log( 'pre', shader );
+					pre.vertexShader = shader.vertexShader;
+					pre.fragmentShader = shader.fragmentShader;
+				}
+
 				scene.add( mesh );
 				renderer.render( scene, camera );
 				scene.remove( mesh );
-
+				
 				return {
 					type: material.type,
-					vertexShader: renderer.context.getShaderSource( material.program.vertexShader ),
-					fragmentShader: renderer.context.getShaderSource( material.program.fragmentShader )
+					pre: pre,
+					post: {
+						vertexShader: renderer.context.getShaderSource( material.program.vertexShader ),
+						fragmentShader: renderer.context.getShaderSource( material.program.fragmentShader )
+					}
 				}
 
 			}
 
+			var materialInfo;
 			for( var i = 0; i<materialClasses.length; i++ ){
-				materials.push( compileMaterial( materialClasses[i][0] ) );
-			}
+				materialInfo = compileMaterial( THREE[ materialClasses[i][0] ] );
+				materials.push( materialInfo );
+			}			
 
-			console.log( materials );
+			var ele = document.getElementsByClassName( 'code-container' )[0];
+			var lcode = document.getElementById( 'left-code' );
+			var rcode = document.getElementById( 'right-code' );
+
+			// lcode.innerHTML = materialInfo.pre.vertexShader.replace( '#include <', '#include $lt;' ).replace( ';			
+			lcode.innerHTML = materialInfo.post.vertexShader;			
+			rcode.innerHTML = materialInfo.post.vertexShader;			
+
+			Prism.highlightAllUnder( ele, true );
 			
 
 		</script>
