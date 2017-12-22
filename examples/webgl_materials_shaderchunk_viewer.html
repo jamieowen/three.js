@@ -94,7 +94,7 @@
 
 		<div class="content">
 
-			<div class="code-container language-glsl">
+			<div class="code-container line-numbers language-glsl">
 
 				<div class="left-panel">
 
@@ -167,6 +167,12 @@
 
 			}
 
+			var encodeEntities = function( str ){
+				return str.replace(/[\u00A0-\u9999<>\&]/gim, function(i) {
+   					return '&#'+i.charCodeAt(0)+';';
+				});
+			}
+
 			var materialInfo;
 			for( var i = 0; i<materialClasses.length; i++ ){
 				materialInfo = compileMaterial( THREE[ materialClasses[i][0] ] );
@@ -188,8 +194,8 @@
 
 				materialSelect.selectedIndex = index;
 
-				document.getElementById( 'left-code' ).innerHTML = materials[index].post.vertexShader;			
-				document.getElementById( 'right-code' ).innerHTML = materials[index].post.vertexShader;
+				document.getElementById( 'left-code' ).innerHTML = encodeEntities( materials[index].pre.vertexShader );			
+				document.getElementById( 'right-code' ).innerHTML = encodeEntities( materials[index].post.vertexShader );
 
 				Prism.highlightAllUnder( document.getElementsByClassName( 'code-container' )[0], true );				
 
