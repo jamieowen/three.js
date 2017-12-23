@@ -61,13 +61,17 @@
 				height: 100%;				
 			}
 
-			.left-panel{
+			.code-line{
+				display: inline;
+			}
+
+			#left-container{
 				position: absolute;
 				width: 50%;
 				left: 0px; top: 0px;				
 			}
 
-			.right-panel{	
+			#right-container{	
 				position: absolute;
 				width: 50%;
 				left: 50%; top: 0px;
@@ -90,26 +94,21 @@
 		<div class="navigation">
 			<select id="material-select">				
 			</select>
+			<form id="shader-select">
+				<input type="radio" checked name="shader" value="vertexShader">vertex</input>
+				<input type="radio" name="shader" value="fragmentShader">fragment</input>
+			</form>
+
 		</div>
 
 		<div class="content">
 
 			<div class="code-container language-glsl">
 
-				<div class="left-panel">
-
-					<pre>
-						<code id="left-code"></code>
-					</pre>
-
+				<div id="left-container">
 				</div>
 
-				<div class="right-panel">
-						
-					<pre>
-						<code id="right-code"></code>
-					</pre>
-
+				<div id="right-container">					
 				</div>
 
 			</div>
@@ -145,11 +144,10 @@
 
 				var material = new MaterialClass();				
 				var mesh = new THREE.Mesh( geometry,material );
+				var shader;
 
-				var pre = {};
-				material.onBeforeCompile = function( shader ){
-					pre.vertexShader = shader.vertexShader;
-					pre.fragmentShader = shader.fragmentShader;
+				material.onBeforeCompile = function( shd ){
+					shader = shd;
 				}
 
 				scene.add( mesh );
@@ -158,14 +156,22 @@
 				
 				return {
 					type: material.type,
-					pre: pre,
-					post: {
-						vertexShader: renderer.context.getShaderSource( material.program.vertexShader ),
-						fragmentShader: renderer.context.getShaderSource( material.program.fragmentShader )
-					}
+					vertexShaderPre: shader.vertexShader,
+					vertexShaderPost: renderer.context.getShaderSource( material.program.vertexShader ),
+					vertexShaderPreDom: null,
+					vertexShaderPostDom: null,
+					fragmentShaderPre: shader.fragmentShader,
+					fragmentShaderPost: renderer.context.getShaderSource( material.program.fragmentShader ),
+					fragmentShaderPreDom: null,
+					fragmentShaderPostDom: null,
+					domCreatedStatus: false
 				}
 
 			}
+
+			var setLoadingStatus = function( value ){
+
+			}			
 
 			var encodeEntities = function( str ){
 				return str.replace(/[\u00A0-\u9999<>\&]/gim, function(i) {
@@ -173,12 +179,67 @@
 				});
 			}
 
+			var createDomFragment = function( source, callback ){
+
+				source = encodeEntities( source );
+				var lines = source.split( '\n' ).map( function( line ){
+					return `
+					<div class="code-line">${ line }</div>
+					`;
+				});
+				
+				var root = document.createElement( 'div' );
+				root.classList.add( 'language-glsl' );
+				root.innerHTML = `
+				<pre>
+					<code id="code-block language-glsl">
+						${ '\n' + source }
+					</code>
+				</pre>
+				`;
+				// domFragment.appendChild( root );
+				Prism.highlightAllUnder( root, true, callback );
+
+				return root;
+
+			}
+
+			var createDomFragments = function( materialInfo, callback ){
+
+				if( materialInfo.domCreatedStatus ){
+					callback( materialInfo );
+					return;
+				}
+				var qCount = 0;
+				var qCallBack = function(){
+					qCount++;
+					if( qCount === 4 ){
+						setLoadingStatus( false );
+						callback( materialInfo );
+					}
+				}
+
+				setLoadingStatus( true );
+
+				materialInfo.vertexShaderPreDom = createDomFragment( materialInfo.vertexShaderPre, qCallBack );
+				materialInfo.vertexShaderPostDom = createDomFragment( materialInfo.vertexShaderPost, qCallBack );
+				materialInfo.fragmentShaderPreDom = createDomFragment( materialInfo.fragmentShaderPre, qCallBack );
+				materialInfo.fragmentShaderPostDom = createDomFragment( materialInfo.fragmentShaderPost, qCallBack );
+
+				materialInfo.domCreatedStatus = true;
+
+			}
+
+			// Compile Material Source.
+
 			var materialInfo;
 			for( var i = 0; i<materialClasses.length; i++ ){
 				materialInfo = compileMaterial( THREE[ materialClasses[i][0] ] );
 				materials.push( materialInfo );
 			}
 			
+			// Build Material Select
+
 			var materialSelect = document.getElementById( 'material-select' );
 			var option;
 
@@ -190,14 +251,44 @@
 
 			}
 
+			// Handle Shader Type Input
+
+			var shaderSelect = document.getElementById( 'shader-select' );
+
+
 			var onChangeMaterial = function( index ){
 
-				materialSelect.selectedIndex = index;
+				materialSelect.selectedIndex = index;				
 
-				document.getElementById( 'left-code' ).innerHTML = encodeEntities( materials[index].pre.vertexShader );			
-				document.getElementById( 'right-code' ).innerHTML = encodeEntities( materials[index].post.vertexShader );
-				console.log( materials[index].pre.vertexShader );
-				Prism.highlightAllUnder( document.getElementsByClassName( 'code-container' )[0], true );				
+				var leftContainer = document.getElementById( 'left-container' );
+				var rightContainer = document.getElementById( 'right-container' );
+
+				if( leftContainer.children.length ){
+					leftContainer.removeChild( leftContainer.children[0] );
+				}
+				
+				if( rightContainer.children.length ){
+					rightContainer.removeChild( rightContainer.children[0] );
+				}				
+
+				createDomFragments( materials[index], function( materialInfo ){
+
+					var shaderType = shaderSelect.elements[ 'shader' ].value;
+
+					switch( shaderType ){
+						case 'vertexShader':
+							leftContainer.appendChild( materialInfo.vertexShaderPreDom );
+							rightContainer.appendChild( materialInfo.vertexShaderPostDom );						
+							break;
+
+						case 'fragmentShader':
+							leftContainer.appendChild( materialInfo.fragmentShaderPreDom );
+							rightContainer.appendChild( materialInfo.fragmentShaderPostDom );
+							break;
+
+					}
+
+				});
 
 			}
 
@@ -207,8 +298,13 @@
 
 			}
 
-			// Phong
-			onChangeMaterial( 5 ); 
+			shaderSelect.onchange = function(){
+
+				onChangeMaterial( materialSelect.selectedIndex );
+
+			}
+			
+			onChangeMaterial( 5 ); // Phong
 
 		</script>
 
